@@ -12,7 +12,7 @@
 
 #include <wx/thread.h>
 
-#include <sqlite3.h>
+
 #include "JpegFileApp.h"
 #include "noname.h"
 
@@ -48,7 +48,6 @@ public:
 
     ~JpegFileFrame();
 
-    sqlite3 *db;
     //virtual void OnThreadCompletion(wxThreadEvent &);
 
     virtual void OnFindFileUpdate(wxThreadEvent &);
@@ -78,6 +77,8 @@ protected:
     void modifyBatch(wxMouseEvent &event) override;
 
     void removeBatch(wxMouseEvent &event) override;
+
+    void loadBatch(wxMouseEvent &event) override;
 
     void deselectedRow(wxListEvent &event) override;
 

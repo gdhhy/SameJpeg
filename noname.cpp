@@ -45,10 +45,10 @@ MyFrame1::MyFrame1(wxWindow *parent, wxWindowID id, const wxString &title, const
     m_button3->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("宋体")));
     m_button3->Disable();
     m_auiToolBar1->AddControl(m_button3);
-    m_button4 = new wxButton(m_auiToolBar1, ID_BTN_SAVEDB, wxT("存档"), wxDefaultPosition, wxDefaultSize, 0);
-    m_button4->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("宋体")));
-    m_button4->Disable();
-    m_auiToolBar1->AddControl(m_button4);
+    m_btnSave = new wxButton(m_auiToolBar1, ID_BTN_SAVEDB, wxT("存档"), wxDefaultPosition, wxDefaultSize, 0);
+    m_btnSave->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("宋体")));
+    m_btnSave->Disable();
+    m_auiToolBar1->AddControl(m_btnSave);
     m_auiToolBar1->Realize();
 
     m_statusBar1 = this->CreateStatusBar(1, wxSTB_SIZEGRIP, wxID_ANY);
@@ -77,12 +77,10 @@ MyFrame1::MyFrame1(wxWindow *parent, wxWindowID id, const wxString &title, const
 
     bSizer1->Add(m_auinotebook1, 1, wxEXPAND, 1);
 
-
     m_panel2 = new wxPanel(m_auinotebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_panel2->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("宋体")));
 
-    wxBoxSizer *bSizer6;
-    bSizer6 = new wxBoxSizer(wxVERTICAL);
+    auto *bSizer6 = new wxBoxSizer(wxVERTICAL);
 
     m_auiToolBar2 = new wxAuiToolBar(m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT);
     m_button6 = new wxButton(m_auiToolBar2, wxID_ANY, wxT("设置优先级"), wxDefaultPosition, wxSize( 120,-1 ), 0);
@@ -93,6 +91,10 @@ MyFrame1::MyFrame1(wxWindow *parent, wxWindowID id, const wxString &title, const
     m_button7->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("宋体")));
     m_button7->Enable(false);
     m_auiToolBar2->AddControl(m_button7);
+    m_button8 = new wxButton(m_auiToolBar2, wxID_ANY, wxT("加载比较"), wxDefaultPosition, wxDefaultSize, 0);
+    m_button8->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("宋体")));
+    m_button8->Enable(false);
+    m_auiToolBar2->AddControl(m_button8);
     m_auiToolBar2->Realize();
 
     bSizer6->Add(m_auiToolBar2, 0, wxALL, 0);
@@ -106,6 +108,9 @@ MyFrame1::MyFrame1(wxWindow *parent, wxWindowID id, const wxString &title, const
     bSizer6->Fit(m_panel2);
     m_auinotebook1->AddPage(m_panel2, wxT("历史"), false, wxNullBitmap);
 
+    //自定义的 SearchPanel
+    m_panel3 = new SearchPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_auinotebook1->AddPage(m_panel3, wxT("重复文件"), false, wxNullBitmap);
 
     m_listCtrl1->AppendColumn(wxT("序号"), wxLIST_FORMAT_CENTER, 45);
     m_listCtrl1->AppendColumn(wxT("文件名"), wxLIST_FORMAT_LEFT, 300);
@@ -118,6 +123,7 @@ MyFrame1::MyFrame1(wxWindow *parent, wxWindowID id, const wxString &title, const
     m_listCtrl3->AppendColumn(wxT("文件数量"), wxLIST_FORMAT_LEFT, 80);
     m_listCtrl3->AppendColumn(wxT("优先级"), wxLIST_FORMAT_LEFT, 70);
     m_listCtrl3->AppendColumn(wxT("删除数"), wxLIST_FORMAT_LEFT, 70);
+
     //m_listCtrl3->wxWindow::Update();
 
     this->SetSizer(bSizer1);
@@ -133,6 +139,7 @@ MyFrame1::MyFrame1(wxWindow *parent, wxWindowID id, const wxString &title, const
 
     m_button6->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(MyFrame1::modifyBatch), NULL, this);
     m_button7->Connect(wxID_ANY, wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::removeBatch), NULL, this);
+    m_button8->Connect(wxID_ANY, wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::loadBatch), NULL, this);
 
     m_listCtrl3->Connect(wxEVT_COMMAND_LIST_ITEM_DESELECTED, wxListEventHandler(MyFrame1::deselectedRow), NULL, this);
     m_listCtrl3->Connect(wxEVT_COMMAND_LIST_ITEM_SELECTED, wxListEventHandler(MyFrame1::selectedRow), NULL, this);
@@ -144,7 +151,10 @@ MyFrame1::~MyFrame1() {
     this->Disconnect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(MyFrame1::onClose));
     m_button2->Disconnect(wxEVT_LEFT_UP, wxMouseEventHandler(MyFrame1::clickChoosePath), NULL, this);
     m_button3->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::clickStopThread), NULL, this);
-    m_button4->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::saveToDb), NULL, this);
+    m_btnSave->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::saveToDb), NULL, this);
+    m_button6->Disconnect(wxEVT_LEFT_UP, wxMouseEventHandler(MyFrame1::modifyBatch), NULL, this);
+    m_button7->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::removeBatch), NULL, this);
+    m_button8->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxMouseEventHandler(MyFrame1::loadBatch), NULL, this);
 }
 
  

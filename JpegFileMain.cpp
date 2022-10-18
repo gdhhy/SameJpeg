@@ -16,15 +16,15 @@
 #endif //__BORLANDC__
 
 #include "JpegFileMain.h"
-
+#include "fileListThread.h"
 #include "wx/dirdlg.h"
 #include <boost/filesystem.hpp>
-#include "fileListThread.h"
+#include <boost/thread.hpp>
 #include "wx/wxprec.h"
 #include "wx/app.h"
 #include "sqlfunc.h"
-#include <boost/thread.hpp>
 #include <wx/msgdlg.h>
+#include <sqlite3.h>
 #include "wx/numdlg.h"
 
 namespace fs = boost::filesystem;
@@ -33,7 +33,7 @@ namespace fs = boost::filesystem;
 std::vector<filesha256> file256List;
 std::vector<std::string> sha256;
 std::vector<photoBatch> batchList;
-
+sqlite3 *db;
 // helper functions
 enum wxbuildinfoformat {
     short_f,
@@ -90,13 +90,16 @@ JpegFileFrame::JpegFileFrame(wxFrame *frame) : MyFrame1(frame) {
     m_gauge1->SetRange(100);
 
     int rc;
+    //sqlite3* db2;
     /* Open database */
     rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
     if (rc) {
         wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 1);
         // exit(0);
-    } else
+    } else {
+        //db=db2;
         boost::thread readBatch{getHistory, this};
+    }
 }
 
 JpegFileFrame::~JpegFileFrame() {
@@ -210,7 +213,7 @@ void JpegFileFrame::OnSha256Update(wxThreadEvent &e) {
     m_gauge1->Update();
     m_listCtrl1->wxWindow::Update();
     if (e.GetInt() >= 100) {
-        m_button4->Enable();
+        m_btnSave->Enable();
     }
 }
 
@@ -228,8 +231,8 @@ void JpegFileFrame::saveDbUpdate(wxCommandEvent &e) {
     else {
         wxLogStatus(this, wxT("存档完成"), 1);
         boost::thread readBatch{getHistory, this};
-        m_button4->Disable();//存档按钮
-        m_button4->Update();
+        m_btnSave->Disable();//存档按钮
+        m_btnSave->Update();
     }
     m_gauge1->SetValue(e.GetInt());
 }
@@ -269,13 +272,21 @@ void JpegFileFrame::removeBatch(wxMouseEvent &event) {
         deletePhotoBatch(batchList.at(item_selected).execID, this);
 }
 
+void JpegFileFrame::loadBatch(wxMouseEvent &event) {
+    if (wxMessageBox(wxString::Format(wxT("确定要删除目录：%s下文件数据吗？"), batchList.at(item_selected).scanDir), wxT("请确认"),
+                     wxICON_QUESTION | wxYES_NO, this) == wxYES)
+        deletePhotoBatch(batchList.at(item_selected).execID, this);
+}
+
 void JpegFileFrame::deselectedRow(wxListEvent &event) {
     m_button6->Disable();
     m_button7->Disable();
+    m_button8->Disable();
 }
 
 void JpegFileFrame::selectedRow(wxListEvent &event) {
     item_selected = event.GetItem();
     m_button6->Enable();
     m_button7->Enable();
+    m_button8->Enable();
 }

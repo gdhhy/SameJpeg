@@ -20,15 +20,16 @@
 #include <wx/image.h>
 #include <wx/icon.h>
 #include <wx/toolbar.h>
-#include <wx/grid.h>
 #include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/event.h>
 #include <wx/gauge.h>
 #include <wx/listctrl.h>
+#include <wx/checklst.h>
 #include <wx/aui/aui.h>
 #include <wx/aui/auibook.h>
 #include <wx/aui/auibar.h>
+#include "SearchPanel.h"
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -46,13 +47,15 @@ protected:
     wxTextCtrl *m_textCtrl2;
     wxButton *m_button2;
     wxButton *m_button3;
-    wxButton *m_button4;
+    wxButton *m_btnSave;
     wxListCtrl *m_listCtrl1;
     wxGauge *m_gauge1;
     wxPanel* m_panel2;
+    SearchPanel* m_panel3;
     wxAuiToolBar* m_auiToolBar2;
     wxButton* m_button6;
     wxButton* m_button7;
+    wxButton* m_button8;
     wxListCtrl* m_listCtrl3;
     wxStatusBar *m_statusBar1;
 
@@ -68,6 +71,7 @@ protected:
 
     virtual void modifyBatch(wxMouseEvent &event) { event.Skip(); }
     virtual void removeBatch(wxMouseEvent &event) { event.Skip(); }
+    virtual void loadBatch(wxMouseEvent &event) { event.Skip(); }
    // virtual void dblClick( wxMouseEvent& event ) { event.Skip(); }
     //virtual void showHistory(wxMouseEvent &event) { event.Skip(); } //move to JpegFileMain.h
 

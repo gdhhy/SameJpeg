@@ -8,6 +8,7 @@
 extern std::vector<filesha256> file256List;
 extern std::vector<photoBatch> batchList;
 extern std::vector<std::string> sha256;
+extern sqlite3 *db;
 /*
 Description:Convert between ANSI and UTF-8
 Usage:
@@ -89,51 +90,41 @@ static int readHistoryRow(void *pData, int argc, char **argv, char **azColName) 
     return 0;
 }
 
-int getRepeat(JpegFileFrame *frame) {
+int getRepeat(wxFrame *frame) {
     std::string select = "select * from photofile where sha256 in("
                          "select sha256 from photofile group by sha256 having count(sha256)>1) order by  sha256";
-    //sqlite3 *db;
-    char *zErrMsg;
-    int rc;
-    /* Open database */
-   /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
-    if (rc) {
-        wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 1);
-        // exit(0);
-    } else {*/
-        rc = sqlite3_exec(frame->db, select.c_str(), readHistoryRow, &batchList, &zErrMsg);
-        if (rc != SQLITE_OK) {
-            wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(frame->db)), 2);
-            sqlite3_free(zErrMsg);
-        } else {
-            wxQueueEvent(frame, new wxThreadEvent(wxEVT_COMMAND_READBATCH));
-        }
-   /* }
 
-    sqlite3_close(db);*/
+    char *zErrMsg;
+    int rc = sqlite3_exec(db, select.c_str(), readHistoryRow, &batchList, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(db)), 2);
+        sqlite3_free(zErrMsg);
+    } else {
+        wxQueueEvent(frame, new wxThreadEvent(wxEVT_COMMAND_READBATCH));
+    }
 
     return batchList.size();
 }
 
-int getHistory(JpegFileFrame *frame) {
+int getHistory(wxFrame *frame) {
     batchList.clear();
     std::string selectBatch = "select execID,scanDir,scanTime,fileCount,totalSize,keepPriority,removeCount from photoBatch where filecount>0 order by keepPriority desc,execID asc";
-    sqlite3 *db = frame->db;
+
     char *zErrMsg;
     int rc;
     /* Open database */
-   /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
-    if (rc) {
-        wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 1);
-        // exit(0);
-    } else {*/
-        rc = sqlite3_exec(db, selectBatch.c_str(), readHistoryRow, &batchList, &zErrMsg);
-        if (rc != SQLITE_OK) {
-            wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(db)), 2);
-            sqlite3_free(zErrMsg);
-        } else {
-            wxQueueEvent(frame, new wxThreadEvent(wxEVT_COMMAND_READBATCH));
-        }
+    /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
+     if (rc) {
+         wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 1);
+         // exit(0);
+     } else {*/
+    rc = sqlite3_exec(db, selectBatch.c_str(), readHistoryRow, &batchList, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(db)), 2);
+        sqlite3_free(zErrMsg);
+    } else {
+        wxQueueEvent(frame, new wxThreadEvent(wxEVT_COMMAND_READBATCH));
+    }
     //}
 
     //sqlite3_close(db);
@@ -141,7 +132,7 @@ int getHistory(JpegFileFrame *frame) {
     return batchList.size();
 }
 
-int saveDb(const wxString rootDir, JpegFileFrame *frame) {
+int saveDb(const wxString rootDir, wxFrame *frame) {
     //sqlite3 *db;
     char *zErrMsg;
     int rc;
@@ -163,10 +154,11 @@ int saveDb(const wxString rootDir, JpegFileFrame *frame) {
     // char *strc=new char(strlen(rootDir.c_str())+1);
     // strcpy(strc,rootDir.c_str());
     /** photobatch **/
-    sprintf(sql, batchTemplate.c_str(), rootDir.ToUTF8().data(), time(nullptr), file256List.size());//error rootDir.To8BitData().data()
+    sprintf(sql, batchTemplate.c_str(), rootDir.ToUTF8().data(), time(nullptr),
+            file256List.size());//error rootDir.To8BitData().data()
 
     //CodePageConvert(CP_UTF8, (void *) sql8, CP_ACP, sql);
-    rc = sqlite3_exec(frame->db, sql, callback, nullptr, &zErrMsg);
+    rc = sqlite3_exec(db, sql, callback, nullptr, &zErrMsg);
     if (rc != SQLITE_OK) {
         sqlite3_free(zErrMsg);
         return 0;
@@ -174,7 +166,7 @@ int saveDb(const wxString rootDir, JpegFileFrame *frame) {
     // todo query auto increment id
     /** query photobatch autoincrement id **/
     int autoIncrementID;
-    rc = sqlite3_exec(frame->db, queryExecID.c_str(), getAutoIncrementID, &autoIncrementID, &zErrMsg);
+    rc = sqlite3_exec(db, queryExecID.c_str(), getAutoIncrementID, &autoIncrementID, &zErrMsg);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
@@ -195,7 +187,7 @@ int saveDb(const wxString rootDir, JpegFileFrame *frame) {
         /* sqlTemplate=wxString::Format("INSERT INTO photofile (filename,execID,createTime,modifyTime,fileSize,sha256) VALUES('%s',%i,%i,%i,%i,'%s')",
                  file.filename,file.createTime, file.modifyTime, file.fileSize, file.sha256.c_str());*/
         /* Execute SQL statement */
-        rc = sqlite3_exec(frame->db, sql8, callback, nullptr, &zErrMsg);// error sql9(3)\To8BitData(3)\ToStdString (3)
+        rc = sqlite3_exec(db, sql8, callback, nullptr, &zErrMsg);// error sql9(3)\To8BitData(3)\ToStdString (3)
         if (rc != SQLITE_OK) {
             wxLogStatus(frame, zErrMsg, 1);
             sqlite3_free(zErrMsg);
@@ -216,31 +208,31 @@ int saveDb(const wxString rootDir, JpegFileFrame *frame) {
     return insertRecordCount;
 }
 
-int deletePhotoBatch(const int execID, JpegFileFrame *frame) {
+int deletePhotoBatch(const int execID, wxFrame *frame) {
     wxString deleteFile = wxString::Format("DELETE FROM photoFile  WHERE execID=%i", execID);
-    wxString deleteBatch = wxString::Format("DELETE FROM photobatch  WHERE execID=%i", execID);
+    wxString deleteBatch = wxString::Format("DELETE FROM photoBatch  WHERE execID=%i", execID);
 
     //sqlite3 *db;
     char *zErrMsg;
     int rc;
     /* Open database */
-   /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
-    if (rc) {
-        wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 1);
-    } else {*/
-        rc = sqlite3_exec(frame->db, deleteFile.data(), nullptr, nullptr, &zErrMsg);
+    /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
+     if (rc) {
+         wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 1);
+     } else {*/
+    rc = sqlite3_exec(db, deleteFile.data(), nullptr, nullptr, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(db)), 1);
+        sqlite3_free(zErrMsg);
+    } else {
+        rc = sqlite3_exec(db, deleteBatch.data(), nullptr, nullptr, &zErrMsg);
         if (rc != SQLITE_OK) {
-            wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(frame->db)), 1);
+            wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(db)), 1);
             sqlite3_free(zErrMsg);
-        } else {
-            rc = sqlite3_exec(frame->db, deleteBatch.data(), nullptr, nullptr, &zErrMsg);
-            if (rc != SQLITE_OK) {
-                wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(frame->db)), 1);
-                sqlite3_free(zErrMsg);
-            } else
-                wxLogStatus(frame, wxT("删除成功"), 1);
-        }
-  //  }
+        } else
+            wxLogStatus(frame, wxT("删除成功"), 1);
+    }
+    //  }
 
     //sqlite3_close(db);
 
@@ -250,26 +242,27 @@ int deletePhotoBatch(const int execID, JpegFileFrame *frame) {
 }
 
 
-int updateBatch(const int execID, const int keepPriority, JpegFileFrame *frame) {
-    wxString updatePriority = wxString::Format("UPDATE PhotoBatch SET keepPriority=%i WHERE execID=%i", keepPriority, execID);
+int updateBatch(const int execID, const int keepPriority, wxFrame *frame) {
+    wxString updatePriority = wxString::Format("UPDATE PhotoBatch SET keepPriority=%i WHERE execID=%i", keepPriority,
+                                               execID);
 
     //sqlite3 *db;
     char *zErrMsg;
     int rc;
     /* Open database */
-   /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
-    if (rc) {
-        wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 3);
-    } else {*/
-        rc = sqlite3_exec(frame->db, updatePriority.data(), nullptr, nullptr, &zErrMsg);
-        if (rc != SQLITE_OK) {
-            wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(frame->db)), 3);
-            sqlite3_free(zErrMsg);
-        } else
-            wxLogStatus(frame, wxT("修改优先级成功"), 1);
-   /* }
+    /* rc = sqlite3_open("photofile.db", &db);//_v2,SQLITE_OPEN_READONLY, nullptr
+     if (rc) {
+         wxLogStatus(frame, wxString::Format("Can't open database: %s", sqlite3_errmsg(db)), 3);
+     } else {*/
+    rc = sqlite3_exec(db, updatePriority.data(), nullptr, nullptr, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        wxLogStatus(frame, wxString::Format("SQL error: %s", sqlite3_errmsg(db)), 3);
+        sqlite3_free(zErrMsg);
+    } else
+        wxLogStatus(frame, wxT("修改优先级成功"), 1);
+    /* }
 
-    sqlite3_close(db);*/
+     sqlite3_close(db);*/
     getHistory(frame);
     return 0;
 }

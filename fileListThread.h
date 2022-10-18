@@ -14,13 +14,11 @@
 #endif // JPEGFILE_FILELISTTHREAD_H
 namespace fs = boost::filesystem;
 
-class MyThread : public wxThread
-{
+class MyThread : public wxThread {
 public:
-    MyThread(JpegFileFrame *frame, const fs::path &src_path )
-    {
+    MyThread(JpegFileFrame *frame, const fs::path &src_path) {
         m_pHandler = frame;
-        this->src_path = src_path; 
+        this->src_path = src_path;
     };
 
     virtual ExitCode Entry();
@@ -28,6 +26,6 @@ public:
     virtual ~MyThread();
 
 protected:
-     fs::path src_path; 
+    fs::path src_path;
     JpegFileFrame *m_pHandler;
 };

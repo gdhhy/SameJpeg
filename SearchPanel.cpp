@@ -3,12 +3,13 @@
 //
 
 #include "SearchPanel.h"
+#include "sqlfunc.h"
+#include <boost/thread.hpp>
 
-
-SearchPanel::SearchPanel(wxAuiNotebook *parent, wxWindowID winid, const wxPoint &pos, const wxSize &size, long style,
+SearchPanel::SearchPanel(wxFrame *parent, wxWindowID winid, const wxPoint &pos, const wxSize &size, long style,
                          const wxString &name) {
     wxPanel::Create(parent, winid, pos, size, style, name);
-   // this->p_frame = parent;
+    this->p_frame = parent;
     auto *bSizer1 = new wxBoxSizer(wxVERTICAL);
     m_auiToolBar1 = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT);
     m_btn_loadRepeat = new wxButton(m_auiToolBar1, wxID_ANY, wxT("加载"), wxDefaultPosition, wxSize(120, -1), 0);
@@ -47,5 +48,5 @@ SearchPanel::~SearchPanel() {
 void SearchPanel::loadRepeat(wxMouseEvent &event) {
     // getHistory()
     //updateBatch(batchList.at(item_selected).execID, value, this);
-    //boost::thread readBatch{getRepeat(p_frame), this};
+    //boost::thread readBatch{getRepeat(this->p_frame), this};
 }

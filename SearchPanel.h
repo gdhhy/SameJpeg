@@ -31,7 +31,7 @@
 
 class SearchPanel : public wxPanel {
 protected:
-   // JpegFileFrame *p_frame;
+    wxFrame *p_frame;
     wxAuiToolBar *m_auiToolBar1;
     wxButton *m_btn_loadRepeat;
     wxButton *m_btn_deleteRepeat;
@@ -40,7 +40,7 @@ protected:
     virtual void loadRepeat(wxMouseEvent &event);
 
 public:
-    SearchPanel(wxAuiNotebook *parent,
+    SearchPanel(wxFrame *parent,
                 wxWindowID winid = wxID_ANY,
                 const wxPoint &pos = wxDefaultPosition,
                 const wxSize &size = wxDefaultSize,
